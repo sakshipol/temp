@@ -1,0 +1,136 @@
+CREATE DATABASE LINK TOORCL CONNECT TO SCOTT IDENTIFIED BY sies123 USING 'orcl';
+
+Practical 1
+Open 2 CMD AS Run as Administrator -> sqlplus / as sysdba ->
+
+1cmd) connect scott/sies123@orcl; -> create table student1(rollno number(5), name varchar2(20)); -> desc student1; -> insert into student1 values(1,'sakshi'); -> insert into student1 values(2,'swara'); -> select * from student1; -> COMMIT;
+
+2cmd) CREATE DATABASE LINK TOORCL CONNECT TO SCOTT IDENTIFIED BY sies123 USING 'orcl'; -> SELECT * FROM student1@toorcl; 
+
+
+actuall Steps:
+a)
+Open Database Congiguration assistant -> Create a Database(NEXT) ->
+
+b)Create a Database design template with the DBCA
+Manage Templates(Next) -> 
+
+c)Generate database creation scripts with the DBCA
+Create a Database(NEXT) -> Custom database(Next) -> GID:script1 -> SID:script2 -> Password:sies123
+
+Practical 2
+Open CMD AS Run as Administrator -> sqlplus / as sysdba ->
+shutdown abort ->startup ->select instance_name , status from v$instance; -> shutdown abort; -> startup;
+
+
+Practical 3
+Open CMD AS Run as Administrator -> sqlplus / as sysdba -> username:scott, Password:sies123 -> 
+
+a)Create and manage database user account
+connect scott/tiger as sysdba; ->  create user sakshi identified by sak123; -> select username from dba_users; -> alter user sakshi identified by sakshi123; -> drop user sakshi cascade; 
+
+b)Authenticatication users
+create user sakshi identified by sak123; -> GRANT ALL PRIVILEGES TO sakshi; -> connect sakshi/sak123; -> select user from dual; ->  create table emp(eid number(5), ename varchar2(10)); 
+
+c)Grant and revoke privileges
+connect scott/tiger as sysdba; -> REVOKE ALL PRIVILEGES FROM sakshi;
+
+d)Create and Manage roles
+connect scott/tiger as sysdba; -> GRANT ALL PRIVILEGES TO sakshi; -> connect scott/tiger as sysdba; -> create role manager_role; -> GRANT ALL PRIVILEGES TO manager_role; -> grant manager_role to sakshi; -> revoke manager_role from sakshi; -> drop role manager_role; -> 
+
+e)Implement Stanadard password security features
+connect scott/tiger as sysdba; -> GRANT ALL PRIVILEGES TO sakshi; -> CREATE PROFILE SECURE_PROFILE LIMIT; -> ALTER USER sakshi PROFILE SECURE_PROFILE; -> SELECT * FROM DBA_PROFILES WHERE PROFILE = 'SECURE_PROFILE';
+
+Practical 4: Managing Schema Objects
+a)Create and Modify tables
+Open CMD AS Run as Administrator -> sqlplus / as sysdba ->create table employees(empid int primary key, first_name varchar2(10), last_name varchar2(10),hire_date date, salary int); -> alter table employees add(email varchar2(10)); -> drop table employees;
+
+b)Define constraint
+create table employees(empid int primary key, first_name varchar2(10), last_name varchar2(10),hire_date date, salary int); -> create table dept1(dept_id int primary key, dept_name varchar2(20) unique, manager_id int, constraint fk_manager foreign key (manager_id) references employees(empid)); -> create table dept2(dept_id int, dept_name varchar2(20), manager_id int);-> alter table dept2 add constraint pk_dept2 primary key(dept_id); 
+
+c)View the columns and contents of a table 
+desc employees; -> insert into employees values(1, 'John', 'Doe', '25-Jun-2022', 6000); ->
+insert into employees values(2, 'Jane', 'Smith', '05-Jul-2023', 7000); -> insert into employees values(3, 'Robert', 'Johnson', '12-Feb-2023', 5000); -> insert into employees values(4, 'Emily', 'Davis', '10-Feb-2023', 2000); -> select * from employees; -> select * from employees where salary > 5000; -> select first_name, salary from employees;
+
+Practical 5: MAnaging undo Data
+
+a)Monitor and administrator undo
+->select name, value from v$parameter where name like 'undo%';
+
+Practical 6: Configure the Oracle Network Environment
+a)Create additional Listerner
+Open Oracle Net Configuration Assistant -> (Listener configuration)Next -> (Add)Next -> Listener name:LISTENER1 -> select TCP -> Use another port number:1522 -> next -> Next ->
+
+Open CMD AS Run as Administrator -> lsnrctl status LISTENER1 -> lsnrctl stop LISTENER1 -> lsnrctl start LISTENER1
+
+Practical 7:Performing Databases backups
+
+a)RMAN full databse backup
+
+Open CMD AS Run as Administrator -> mkdir C:\app\oracle\backup -> rman target / -> BACKUP DATABASE FORMAT 'C:\app\oracle\backup\full_backup_%U';
+
+(if Error)
+Open CMD AS Run as Administrator -> sqlplus / as sysdba; -> select log_mode from v$database; -> SHUTDOWN MOUNT -> SHUTDOWN IMMEDIATE; -> STARTUP MOUNT; -> ALTER DATABASE ARCHIVELOG; -> select log_mode from v$database; -> alter database open;
+then again open CMD AS Run as Administrator ->
+mkdir C:\app\oracle\backup -> rman target / -> BACKUP DATABASE FORMAT 'C:\app\oracle\backup\full_backup_%U'; -> 
+
+b)incremental backup
+BACKUP INCREMENTAL LEVEL 1 DATABASE FORMAT'C:\app\oracle\backup\incremental_backup_%U';
+
+c)archivelog backup
+BACKUP ARCHIVELOG ALL FORMAT 'C:\app\oracle\backup\arch_backup_%U';
+
+d)RMAN backup of control file and SPFILE
+BACKUP CURRENT CONTROLFILE FORMAT 'C:\app\oracle\backup\controlfile_backup_%U';
+
+BACKUP SPFILE FORMAT 'C:\app\oracle\backup\spfile_%U.bkp';
+
+e)RMAN backup with compression
+BACKUP AS COMPRESSED BACKUPSET DATABASE FORMAT 'C:\app\oracle\backup\compressed_full_backup_%U';
+
+f)Validating backup
+RESTORE DATABASE VALIDATE;
+RESTORE ARCHIVELOG ALL VALIDATE;
+
+g)Scheduling backup using RMAN
+BACKUP DATABASE PLUS ARCHIVELOG;
+
+Execute in sql:
+BEGIN
+ DBMS_SCHEDULER.create_job (
+ job name => 'backup_job',
+ job_type => 'EXECUTABLE',
+ job_action => '/u01/app/oracle/backup/backup_database.rcv'
+ start_date => SYSTIMESTAMP,
+ repeat_interval =>'FREQ-DAILY; BYHOUR=22; BYMINUTE=0',
+ enabled => TRUE
+ );
+END;
+/
+
+
+Practical 8 : Performing database Recovery
+Open CMD AS Run as Administrator -> sqlplus / as sysdba; 
+-> SELECT file_name FROM dba_data_files WHERE tablespace_name = 'USERS';  
+->  ALTER TABLESPACE users ADD DATAFILE 'C:\app\polpr\oradata\sakshi1\USERS02.DBF' SIZE 50M; size 50m; 
+->  create tablespace mynewtablespace
+datafile 'C:\app\polpr\oradata\sakshi1\mynewdatafile.dbf' size 100m
+autoextended on next 10m maxsize 1g;  
+-> CREATE TABLESPACE mynewtablespace
+DATAFILE 'C:\app\polpr\oradata\sakshi1\mynewdatafile.dbf' 
+SIZE 100M 
+AUTOEXTEND ON NEXT 10M MAXSIZE 1G;
+
+
+Again open Open CMD AS Run as Administrator 
+-> rman target / -> BACKUP DATABASE; 
+
+to delete this datafile (Again open SQL->)
+-> SELECT file_name, tablespace_name  
+FROM dba_data_files  
+WHERE file_name LIKE '%MYNEWDATAFILE.DBF';
+-> Shutdown immediate; --(now file deletion is possible)
+
+Again open Open CMD AS Run as Administrator
+-> cd C:\app\polpr\oradata\sakshi1
+-> 
