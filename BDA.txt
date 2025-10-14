@@ -1,0 +1,663 @@
+Pract2 
+#implement a program in pig
+
+!git clone https://github.com/DeltaOptimist/Implement_pig_using_pyspark.git
+
+!pip install pyspark
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, avg
+
+#Initialize a Spark session
+spark = SparkSession.builder.appName("Real Estate Analysis").getOrCreate()
+
+# Load the dataset
+data = spark.read.option("header", "true").csv("/content/Implement_pig_using_pyspark/Real estate (1).csv", inferSchema=True)
+
+# Show the schema
+data.printSchema()
+
+data.show()#Displays the first 20 rows of the dataset in a tabular format — just like SQL SELECT * FROM data LIMIT 20.
+
+#Filter records where house age is greater than 20
+filtered_data = data.filter(col("X2 house age") > 20)
+
+filtered_data.show()
+
+#Group by number of convenience stores and calculate the average house price
+grouped_data = filtered_data.groupBy("X4 number of convenience stores").agg(avg("Y house price of unit area").alias("avg_house_price"))
+
+#Show the result
+grouped_data.show()
+
+# Stop the Spark session
+spark.stop()# Stop the Spark session 
+
+
+
+pract3.
+##Implement Word Count /frequency program using MapReduce.
+!git clone https://github.com/DeltaOptimist/Implement-word-count-frequency-programs-using-MapReduce.git
+
+!pip install pyspark
+
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.master("local[*]").getOrCreate()
+"""
+"local[*]" → Use all available CPU cores.
+.getOrCreate() → Reuses an existing session if one exists.
+"""
+
+from pyspark import SparkContext
+"""
+SparkContext is the main entry point for using low-level Spark functionalities, especially when working with RDDs (Resilient Distributed Datasets).
+"""
+
+sc = SparkContext.getOrCreate()
+
+Words=sc.textFile("/content/Implement-word-count-frequency-programs-using-MapReduce/input.txt")
+#This line reads a text file from the given path into an RDD (Resilient Distributed Dataset) named Words.
+
+
+Words.collect()
+"""
+This command collects all the elements from the RDD (Words) and brings them from Spark’s distributed memory back to your local Python environment as a normal Python list.
+"""
+
+WordsCount=Words.flatMap(lambda line: line.split(" ")).map(lambda word: (word, 1))
+
+
+WordsCount.count()
+
+
+WordsCount.collect()
+
+
+DistinctWordsCount=WordsCount.reduceByKey(lambda a,b: a+b)
+
+
+
+DistinctWordsCount.count()
+
+
+DistinctWordsCount.collect()
+
+
+SortedWordsCount=DistinctWordsCount.map(lambda a: (a[1], a[0])).sortByKey()
+
+
+SortedWordsCount.top(5)
+
+
+SortedWordsCount.collect()
+
+
+#print most frequent 20 words
+SortedWordsCount.top(20)
+
+
+pract4
+#configure the Hive and implement the application in Hive
+
+from pyspark.sql import SparkSession,Row
+
+spark = SparkSession.builder.appName("hive with pyspark example").enableHiveSupport().getOrCreate()
+
+
+data = [
+Row(name="Alice", age=25),
+Row(name="Bob", age=30),
+Row(name="Charlie", age=35)
+]
+df = spark.createDataFrame(data)
+
+
+spark.sql("CREATE DATABASE IF NOT EXISTS sample_db")
+
+
+df.write.mode("overwrite").saveAsTable("people")
+
+
+result = spark.sql("""
+Select * from people
+""")
+
+
+result.show()
+
+spark.stop()
+
+
+
+Pract5:
+#implement Spark SQL
+!git clone https://github.com/DeltaOptimist/Analyzing-California-Housing-Data-Using-PySpark-and-Spark-SQL.git
+
+!pip install pyspark
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, avg, max, min
+
+#Initialize Spark Session
+spark = SparkSession.builder.appName("California Housing Analysis").getOrCreate()
+
+#Load Built-in Dataset
+# (Assuming that the dataset is available locally in the sample_data directory)
+df = spark.read.csv("/content/sample_data/california_housing_train.csv", header=True, inferSchema=True)
+
+
+# Show the first few rows of the dataset
+df.show(5)
+
+
+# Register DataFrame as Temp Table
+df.createOrReplaceTempView("california_housing")
+
+
+# Example Analysis 1: Calculate average house value by median income bracket
+result1 = spark.sql("""
+    SELECT median_income, AVG(median_house_value) as avg_house_value
+    FROM california_housing
+    GROUP BY median_income
+    ORDER BY median_income
+""")
+result1.show()
+
+
+
+# Example Analysis 2: Find the maximum and minimum house values in each housing block
+result2 = spark.sql("""
+    SELECT longitude, latitude, MAX(median_house_value) as max_house_value,
+           MIN(median_house_value) as min_house_value
+    FROM california_housing
+    GROUP BY longitude, latitude
+    ORDER BY max_house_value DESC
+    LIMIT 10
+""")
+result2.show()
+
+
+
+# Example Analysis 3: Determine the average house value for houses older than 50 years
+result3 = spark.sql("""
+    SELECT AVG(median_house_value) as avg_old_house_value
+    FROM california_housing
+    WHERE housing_median_age > 50
+""")
+result3.show()
+
+
+# Stop the Spark Session
+spark.stop()
+
+
+pract6:
+#Implement Linear Regression using Pyspark
+
+!git clone https://github.com/DeltaOptimist/Pyspark_Linear_Regression.git
+
+
+!pip install pyspark
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.master("local").appName("linear_regression_model").getOrCreate()
+
+
+real_estate = spark.read.option("inferSchema", "true").csv("/content/Pyspark_Linear_Regression/Real estate.csv",header=True)
+
+
+real_estate.printSchema()
+
+
+real_estate.show(2)
+
+
+real_estate.describe().show()
+
+
+# VectorAssembler to transform data into feature columns
+
+from pyspark.ml.feature import VectorAssembler
+
+assembler = VectorAssembler(inputCols=[
+ 'X1 transaction date',
+ 'X2 house age',
+ 'X3 distance to the nearest MRT station',
+ 'X4 number of convenience stores',
+ 'X5 latitude',
+ 'X6 longitude'],
+ outputCol='features')
+
+
+data_set = assembler.transform(real_estate)
+data_set.select(['features','Y house price of unit area']).show(2)
+
+
+# Split into Train and Test set
+train_data,test_data = data_set.randomSplit([0.7,0.3])
+
+
+train_data.show(truncate=False)
+
+
+test_data.show(truncate=False)
+
+
+#Train your model (Fit your model with train data)
+
+from pyspark.ml.regression import LinearRegression
+
+lr = LinearRegression(labelCol='Y house price of unit area')
+lrModel = lr.fit(train_data)
+
+
+# Perform descriptive analysis with correlation
+
+test_stats = lrModel.evaluate(test_data)
+print(f"RMSE: {test_stats.rootMeanSquaredError}")
+print(f"R2: {test_stats.r2}")
+print(f"R2: {test_stats.meanSquaredError}")
+
+
+pract7:
+#implement Spark Streaming
+
+!git clone https://github.com/DeltaOptimist/fetch_20newsgroups_Spark_Streaming.git
+
+
+from pyspark import SparkContext                          # <-- Import SparkContext: the entry point for Spark functionality (RDD API & cluster connection).
+from pyspark.streaming import StreamingContext            # <-- Import StreamingContext: builds and manages micro-batch streaming computations.
+import threading                                          # <-- Import threading: we'll run the socket server in a background thread so it doesn't block main thread.
+import time                                               # <-- Import time: used for sleep/delays to pace the simulated stream.
+import socket                                             # <-- Import socket: used to create a TCP server that simulates the streaming source.
+
+# Stop any existing SparkSession before creating a new SparkContext
+if 'spark' in globals() and spark is not None:
+    spark.stop()
+
+
+# ----------------------------
+# Step 1: Create Spark Context
+# ----------------------------
+sc = SparkContext("local[2]", "InbuiltDatasetStreaming")  # <-- Create a SparkContext running locally with 2 threads; name the app "InbuiltDatasetStreaming".
+                                                         #     "local[2]" means Spark will use 2 worker threads (one can handle receiving, one processing).
+ssc = StreamingContext(sc, 3)  # batch interval = 3 sec     # <-- Create StreamingContext with batch duration 3 seconds.
+                                                         #     This means Spark will collect data for 3s and then process it as one micro-batch.
+
+
+
+# ----------------------------
+# Step 2: Streaming Source (Socket)
+# ----------------------------
+lines = ssc.socketTextStream("localhost", 9999)           # <-- Create a DStream that connects to TCP socket at localhost:9999.
+                                                         #     Each line of text received becomes a record in the DStream.
+
+
+
+
+# ----------------------------
+# Step 3: Processing Logic
+# ----------------------------
+words = lines.flatMap(lambda line: line.split(" "))       # <-- flatMap: split each incoming line into words. flatMap flattens lists of words into a single stream of words.
+pairs = words.map(lambda word: (word, 1))                 # <-- map: convert each word to a (word, 1) pair for counting.
+word_counts = pairs.reduceByKey(lambda a, b: a + b)       # <-- reduceByKey: aggregate counts for each unique word within each batch.
+# Print results on console
+word_counts.pprint()                                      # <-- pprint() is an action that prints the first few elements of each RDD in each micro-batch to the driver's stdout.
+
+
+
+
+# ✅ Save results to text files (each micro-batch saved separately)
+# Output directory: "stream_output"
+# Spark will create files like "stream_output-<time>/part-0000"
+word_counts.saveAsTextFiles("stream_output/wordcount")
+
+
+
+
+# ----------------------------
+# Step 4: Start Streaming Job
+# ----------------------------
+def start_streaming():
+    ssc.start()             # <-- Start the streaming computation: Spark will begin connecting to sources and processing incoming data.
+    ssc.awaitTermination(60)  # <-- Block the current thread until the streaming job is stopped (manually or by error).
+    ssc.stop(stopSparkContext=True, stopGraceFully=True)
+
+
+
+
+
+# ----------------------------
+# Step 5: Simulate Stream with Inbuilt Dataset
+# ----------------------------
+def send_data():
+    from sklearn.datasets import fetch_20newsgroups       # <-- Import fetch_20newsgroups here (inside function) to avoid downloading at import time in some environments.
+    # Load inbuilt dataset (subset for demo)
+    dataset = fetch_20newsgroups(subset='train', remove=('headers', 'footers', 'quotes'))
+                                                         # <-- Fetch the 20 Newsgroups
+dataset (training subset).
+                                                         #     remove=(...) drops headers/footers/quotes to keep the text cleaner for word counting.
+    data = dataset.data[:50]   # take only first 50 docs for streaming
+                                                         # <-- Keep just the first 50 documents so the demo finishes in a reasonable time.
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                                                         # <-- Create a TCP socket (IPv4, stream).
+    server.bind(("localhost", 9999))                      # <-- Bind the socket server to localhost on port 9999.
+    server.listen(1)                                      # <-- Listen for incoming connections; allow a backlog of 1 connection.
+    print("Socket server started on port 9999...")       # <-- Informational print so you know the server is ready.
+    conn, addr = server.accept()                          # <-- Accept a connection (blocks until a client — Spark — connects).
+                                                         #     conn is the new socket object usable to send/receive data; addr is the client address.
+
+    # Send each line of dataset with delay
+    for doc in data:
+        # Send only first line of each document
+        line = doc.split("\n")[0]                        # <-- Many documents have multiple lines; take the first line to send a single logical message.
+        if line.strip():                                 # <-- Skip empty lines (guard).
+            conn.send((line + "\n").encode("utf-8"))     # <-- Send the line to connected client; append newline and encode to bytes.
+            time.sleep(2)  # 2 sec gap between messages   # <-- Sleep 2 seconds between sends to simulate a paced stream.
+
+    conn.close()                                          # <-- Close the client connection after sending all messages.
+    server.close()                                        # <-- Close the server socket.
+
+
+
+
+# ----------------------------
+# Step 6: Run Everything
+# ----------------------------
+threading.Thread(target=send_data).start()               # <-- Start the socket server in a background thread so it can accept Spark's connection concurrently.
+start_streaming()
+
+
+
+praact8:
+#Demonstrate Spark shell commands using Logistic Regression
+
+!git clone https://github.com/DeltaOptimist/Logistic_regression_BDA_Classification_Pyspark.git
+
+
+!pip install pyspark
+
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName('ml-diabetes').getOrCreate()
+
+
+df = spark.read.csv('/content/Logistic_regression_BDA_Classification_Pyspark/diabetes.csv', header = True, inferSchema = True)
+df.printSchema()
+
+
+
+import pandas as pd
+pd.DataFrame(df.take(5), columns=df.columns).transpose()
+
+
+df.show()
+
+
+
+df.toPandas()
+
+
+
+df.groupby('Outcome').count().toPandas()
+
+
+# making numerical features
+numeric_features = [t[0] for t in df.dtypes if t[1] == 'int']
+
+
+
+numeric_features
+
+
+
+df.select(numeric_features).describe().toPandas().transpose()
+
+
+
+from pandas.plotting import scatter_matrix
+numeric_data = df.select(numeric_features).toPandas()
+
+axs = scatter_matrix(numeric_data, figsize=(8, 8));
+
+# Rotate axis labels and remove axis ticks
+n = len(numeric_data.columns)
+for i in range(n):
+    v = axs[i, 0]
+    v.yaxis.label.set_rotation(0)
+    v.yaxis.label.set_ha('right')
+    v.set_yticks(())
+    h = axs[n-1, i]
+    h.xaxis.label.set_rotation(90)
+    h.set_xticks(())
+
+
+
+
+from pyspark.sql.functions import isnull, when, count, col
+df.select([count(when(isnull(c), c)).alias(c) for c in df.columns]).show()
+
+
+
+
+dataset = df.drop('SkinThickness')
+dataset = dataset.drop('Insulin')
+dataset_new = dataset.drop('DiabetesPedigreeFunction')
+dataset_final = dataset_new.drop('Pregnancies')
+dataset_final.show()
+
+
+
+
+# Assemble all the features with VectorAssembler
+required_features = ['Glucose', 'BloodPressure', 'BMI', 'Age']
+
+from pyspark.ml.feature import VectorAssembler
+
+assembler = VectorAssembler(inputCols=required_features, outputCol='features')
+
+transformed_data = assembler.transform(dataset_final)
+transformed_data.show()
+
+
+
+
+#split the data
+(training_data, test_data) = transformed_data.randomSplit([0.8,0.2])
+print("Training Dataset Count:"+str(training_data.count()))
+print("Test Dataset Count:"+str(test_data.count()))
+
+
+
+from pyspark.ml.classification import LogisticRegression
+
+lr = LogisticRegression(featuresCol='features', labelCol='Outcome',maxIter=10)
+lrModel=lr.fit(training_data)
+lr_predictions=lrModel.transform(test_data)
+
+
+
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+
+
+
+multi_evaluator = MulticlassClassificationEvaluator(labelCol = 'Outcome', metricName = 'accuracy')
+print('Logistic Regression Accuracy:', multi_evaluator.evaluate(lr_predictions))
+
+
+pract9:
+#implement Decision Tree classification technique
+
+!git clone https://github.com/DeltaOptimist/Decision_Tree_BDA_Classification_Pyspark.git
+
+
+!pip install pyspark
+
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName('ml-diabetes').getOrCreate()
+
+
+
+df = spark.read.csv('/content/Decision_Tree_BDA_Classification_Pyspark/diabetes.csv', header = True, inferSchema = True)
+df.printSchema()
+
+
+"""
+The datasets consists of several medical predictor variables and one target variable, Outcome. Predictor variables includes the number of pregnancies the patient has had, their BMI, insulin level, age, and so on.
+
+Input variables: Glucose,BloodPressure,BMI,Age,Pregnancies,Insulin,SkinThikness,DiabetesPedigreeFunction.
+
+Output variables: Outcome.
+"""
+
+
+
+import pandas as pd
+pd.DataFrame(df.take(5), columns=df.columns).transpose()
+
+
+
+df.show()
+
+
+df.toPandas()
+
+
+
+df.groupby('Outcome').count().toPandas()
+
+
+
+#making numerical features
+numeric_features = [t[0] for t in df.dtypes if t[1] == 'int']
+
+
+
+numeric_features
+
+
+df.select(numeric_features).describe().toPandas().transpose()
+
+
+
+from pandas.plotting import scatter_matrix
+numeric_data = df.select(numeric_features).toPandas()
+
+
+
+axs = scatter_matrix(numeric_data, figsize=(8, 8));
+
+
+# Rotate axis labels and remove axis ticks
+n = len(numeric_data.columns)
+for i in range(n):
+    v = axs[i, 0]
+    v.yaxis.label.set_rotation(0)
+    v.yaxis.label.set_ha('right')
+    v.set_yticks(())
+    h = axs[n-1, i]
+    h.xaxis.label.set_rotation(90)
+    h.set_xticks(())
+
+
+
+from pyspark.sql.functions import isnull, when, count, col
+
+
+
+
+df.select([count(when(isnull(c), c)).alias(c) for c in df.columns]).show()
+
+
+
+
+dataset = df.drop('SkinThickness')
+
+
+dataset = dataset.drop('Insulin')
+
+
+dataset.show()
+
+
+dataset_new = dataset.drop('DiabetesPedigreeFunction')
+dataset_new.show()
+
+
+
+dataset_final = dataset_new.drop('Pregnancies')
+dataset_final.show()
+
+
+
+# Assemble all the features with VectorAssembler
+required_features = ['Glucose','BloodPressure','BMI','Age']
+
+
+from pyspark.ml.feature import VectorAssembler
+assembler = VectorAssembler(inputCols=required_features, outputCol='features')
+
+
+
+transformed_data = assembler.transform(dataset_final)
+transformed_data.show()
+
+
+
+(training_data, test_data) = transformed_data.randomSplit([0.8,0.2], seed =2020)
+
+
+print("Training Dataset Count: " + str(training_data.count()))
+print("Test Dataset Count: " + str(test_data.count()))
+
+
+
+"""
+Decision Tree Classifier
+
+Decision trees are widely used since they are easy to interpret, handle categorical features, extend to the multiclass classification setting, do not require feature scaling, and are able to capture non-linearities and feature interactions.
+"""
+
+
+from pyspark.ml.classification import DecisionTreeClassifier
+dt = DecisionTreeClassifier(featuresCol = 'features', labelCol = 'Outcome', maxDepth = 3)
+
+
+
+dtModel = dt.fit(training_data)
+dt_predictions = dtModel.transform(test_data)
+
+
+dt_predictions.select('Glucose', 'BloodPressure', 'BMI', 'Age', 'Outcome').show(10)
+
+
+
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+multi_evaluator = MulticlassClassificationEvaluator(labelCol = 'Outcome', metricName = 'accuracy')
+print('Decision Tree Accuracy:', multi_evaluator.evaluate(dt_predictions))
+
+
+
+"""
+Gradient-boosted Tree classifier Model
+Gradient boosting is a machine learning technique for regression and classification problems, which produces a prediction model in the form of an ensemble of weak prediction models, typically decision trees.
+"""
+
+
+from pyspark.ml.classification import GBTClassifier
+gb = GBTClassifier(labelCol = 'Outcome', featuresCol = 'features')
+gbModel = gb.fit(training_data)
+gb_predictions = gbModel.transform(test_data)
+
+
+
+
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+multi_evaluator = MulticlassClassificationEvaluator(labelCol = 'Outcome', metricName = 'accuracy')
+print('Gradient-boosted Trees Accuracy:', multi_evaluator.evaluate(gb_predictions))
+
+
+
