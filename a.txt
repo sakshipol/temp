@@ -1,6 +1,6 @@
 CREATE DATABASE LINK TOORCL CONNECT TO SCOTT IDENTIFIED BY sies123 USING 'orcl';
 
-Practical 1
+Practical 1 :  Creating Oracle Database 
 Open 2 CMD AS Run as Administrator -> sqlplus / as sysdba ->
 
 1cmd) connect scott/sies123@orcl; -> create table student1(rollno number(5), name varchar2(20)); -> desc student1; -> insert into student1 values(1,'sakshi'); -> insert into student1 values(2,'swara'); -> select * from student1; -> COMMIT;
@@ -9,21 +9,24 @@ Open 2 CMD AS Run as Administrator -> sqlplus / as sysdba ->
 
 
 actuall Steps:
-a)
-Open Database Congiguration assistant -> Create a Database(NEXT) ->
+a)Create a Database with the Database Configuration Assistant (DBCA)
+Open Database Congiguration assistant -> Create a Database(NEXT) -> General ->
 
 b)Create a Database design template with the DBCA
 Manage Templates(Next) -> 
 
 c)Generate database creation scripts with the DBCA
-Create a Database(NEXT) -> Custom database(Next) -> GID:script1 -> SID:script2 -> Password:sies123
+Create a Database(NEXT) -> Custom database(Next) -> GID:script1 -> SID:script2 -> Password:scies123
 
-Practical 2
+Practical 2 : Managing the Oracle Instance
+a)Start and Stop the Oracle database and components. 
 Open CMD AS Run as Administrator -> sqlplus / as sysdba ->
 shutdown abort ->startup ->select instance_name , status from v$instance; -> shutdown abort; -> startup;
 
+b)Use Enterprise Manager (EM) 
+Open services
 
-Practical 3
+Practical 3 : Administering Use Security
 Open CMD AS Run as Administrator -> sqlplus / as sysdba -> username:scott, Password:sies123 -> 
 
 a)Create and manage database user account
@@ -56,6 +59,48 @@ Practical 5: MAnaging undo Data
 
 a)Monitor and administrator undo
 ->select name, value from v$parameter where name like 'undo%';
+
+select 
+a.tablespace_name,
+a.bytes/1024/1024 as size_mb,
+b.bytes/1024/1024 as used_mb,
+(a.bytes-NVL(b.bytes,0))/1024/1024 as free_mb
+from
+dba_data_files a,
+(select sum(bytes) bytes, file_id
+from dba_undo_extents
+where status='ACTIVE'
+Group by file_id) b
+where a.file_id=b.file_id(+)
+and a.tablespace_name in (select value from v$parameter where name='undo_tablespace');
+
+select
+s.sid,
+s.serial#,
+t.used_urec as "Undo Records",
+t.used_ublk as "Undo Blocks",
+s.username
+from
+v$transaction t,
+v$session s
+where
+t.ses_addr=s.saddr;
+
+select file_name from dba_data_files where tablespace_name='UNDOTBS1';
+
+alter database datafile 'C:\APP\SIES\ORADATA\ORCLDB2\UNDOTBS01.DBF' resize 200m;
+
+b)Configure undo retention 
+alter system set undo_management ='AUTO' SCOPE=BOTH;
+
+SHOW Parameter undo_management;
+
+alter system set undo_retention =1800 scope=both;
+
+show parameter undo_retention;
+
+
+
 
 Practical 6: Configure the Oracle Network Environment
 a)Create additional Listerner
@@ -133,4 +178,25 @@ WHERE file_name LIKE '%MYNEWDATAFILE.DBF';
 
 Again open Open CMD AS Run as Administrator
 -> cd C:\app\polpr\oradata\sakshi1
--> 
+-> del mynewdatafile.dbf
+
+restore 
+
+-> rman target/
+-> RMAN> CONNECT TARGET /
+-> RMAN> RESTORE DATAFILE 6;
+-> RMAN> RECOVER DATAFILE 6;
+
+
+connect scott/tiger as sysdba;
+select file_name, tablespace_name
+from dba_data_files
+where file_name like '%USERS01.dbf';
+
+shutdown immediate;
+
+startup;
+
+restore datafile 'C:\app\polpr\oradata\sakshi1\USERS01.dbf'
+
+select status from v$instance;
